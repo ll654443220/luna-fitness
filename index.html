@@ -441,6 +441,16 @@
           <div class="checkbox"></div>
           <span class="text">平板支撑 × 30秒</span>
         </div>
+        <div class="checklist-item" data-task="crunch" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">卷腹 × 20个</span>
+          <span class="tag important">练上腹</span>
+        </div>
+        <div class="checklist-item" data-task="legraise" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">仰卧抬腿 × 15个</span>
+          <span class="tag important">练下腹</span>
+        </div>
         <div class="checklist-item" data-task="walk" onclick="toggleCheck(this)">
           <div class="checkbox"></div>
           <span class="text">步行 30 分钟以上</span>
@@ -696,7 +706,7 @@ const notifMessages = {
   breakfast: { title: '🥟 早餐提醒', body: '记得加一个水煮蛋！+7g蛋白质' },
   lunch: { title: '🍱 午餐提醒', body: '食堂有什么吃什么，别喝含糖饮料！' },
   dinner: { title: '🥗 晚餐提醒', body: '根据中午情况调整——肉菜打一半！选鸡/牛/鱼/虾' },
-  exercise: { title: '💪 运动提醒', body: '深蹲15 + 俯卧撑10 + 平板30秒，15分钟搞定' }
+  exercise: { title: '💪 运动提醒', body: '深蹲15 + 俯卧撑10 + 平板30秒 + 卷腹20 + 抬腿15，20分钟搞定' }
 };
 
 function scheduleNotifications() {
