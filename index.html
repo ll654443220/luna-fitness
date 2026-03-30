@@ -576,7 +576,7 @@ document.getElementById('dateDisplay').textContent =
 function toggleCheck(el) {
   el.classList.toggle('checked');
   const task = el.dataset.task;
-  if (el.classList.checked) {
+  if (el.classList.contains("checked")) {
     state.checks[task] = true;
     showToast('✅ 做得好！');
   } else {
