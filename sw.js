@@ -1,4 +1,4 @@
-const CACHE_NAME = 'luna-fitness-v1';
+const CACHE_NAME = 'luna-fitness-v2';
 const ASSETS = ['/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
