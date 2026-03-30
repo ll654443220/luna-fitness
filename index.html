@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Luna 减脂助手</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #1a1a2e;
+      --card: #16213e;
+      --accent: #e94560;
+      --accent2: #0f3460;
+      --text: #eee;
+      --text-dim: #999;
+      --green: #4ecca3;
+      --yellow: #f9ca24;
+    }
+
+    body {
+      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--accent), #c0392b);
+      padding: 24px 20px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 22px; margin-bottom: 4px; }
+    .header .subtitle { font-size: 13px; opacity: 0.8; }
+
+    .progress-section {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .progress-ring {
+      width: 56px; height: 56px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .progress-ring svg { transform: rotate(-90deg); }
+    .progress-ring circle {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: round;
+    }
+    .progress-ring .bg { stroke: var(--accent2); }
+    .progress-ring .fg { stroke: var(--green); transition: stroke-dashoffset 0.5s; }
+    .progress-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--green);
+    }
+    .progress-info { flex: 1; }
+    .progress-info .label { font-size: 13px; color: var(--text-dim); }
+    .progress-info .streak { font-size: 14px; margin-top: 2px; }
+
+    .section { padding: 0 16px; margin-bottom: 16px; }
+    .section-title {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      padding-left: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .meal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      cursor: pointer;
+    }
+    .meal-header .left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .meal-header .emoji { font-size: 24px; }
+    .meal-header .name { font-size: 15px; font-weight: 600; }
+    .meal-header .time { font-size: 12px; color: var(--text-dim); }
+    .meal-header .arrow {
+      color: var(--text-dim);
+      transition: transform 0.3s;
+      font-size: 12px;
+    }
+    .meal-header.open .arrow { transform: rotate(90deg); }
+
+    .meal-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .meal-body.open { max-height: 300px; }
+    .meal-body-inner { padding: 0 16px 14px; }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      user-select: none;
+    }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item .checkbox {
+      width: 22px; height: 22px;
+      border: 2px solid var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .checklist-item.checked .checkbox {
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .checklist-item.checked .checkbox::after {
+      content: '✓';
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .checklist-item .text { font-size: 14px; flex: 1; }
+    .checklist-item.checked .text {
+      text-decoration: line-through;
+      color: var(--text-dim);
+    }
+    .checklist-item .tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--accent2);
+      color: var(--text-dim);
+    }
+    .checklist-item .tag.protein { background: rgba(78,204,163,0.15); color: var(--green); }
+    .checklist-item .tag.important { background: rgba(233,69,96,0.15); color: var(--accent); }
+
+    .tip-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .tip-card .tip-title {
+      font-size: 13px;
+      color: var(--yellow);
+      margin-bottom: 6px;
+    }
+    .tip-card .tip-text {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .settings-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      padding: 10px 16px;
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+    .settings-bar button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: var(--accent2);
+      color: var(--text);
+    }
+
+    .install-hint {
+      display: none;
+      background: rgba(233,69,96,0.1);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 0 16px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    /* settings modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border-radius: 16px 16px 0 0;
+      width: 100%;
+      max-width: 480px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal h3 { margin-bottom: 16px; }
+    .modal label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+    .modal input[type="time"], .modal input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+    }
+    .modal .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .toggle {
+      width: 44px; height: 24px;
+      background: #555;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px; left: 2px;
+      transition: left 0.2s;
+    }
+    .toggle.on::after { left: 22px; }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: var(--green);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 200;
+      transition: transform 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <h1>🌙 Luna 减脂助手</h1>
+  <div class="subtitle" id="dateDisplay"></div>
+</div>
+
+<div class="progress-section">
+  <div class="progress-ring">
+    <svg width="56" height="56">
+      <circle class="bg" cx="28" cy="28" r="24" />
+      <circle class="fg" cx="28" cy="28" r="24" 
+              stroke-dasharray="150.8" stroke-dashoffset="150.8" id="progressCircle" />
+    </svg>
+    <div class="progress-text" id="progressPct">0%</div>
+  </div>
+  <div class="progress-info">
+    <div class="label">今日完成度</div>
+    <div class="streak" id="streakText">🔥 连续打卡: 0 天</div>
+  </div>
+</div>
+
+<div class="install-hint" id="installHint">
+  📲 点击底部「安装」按钮，把 Luna 添加到桌面！<br>
+  <small>安卓：Chrome → 菜单 → 添加到主屏幕</small>
+</div>
+
+<div class="section">
+  <div class="section-title">📋 今日任务</div>
+  
+  <div class="card" id="card-breakfast">
+    <div class="meal-header" onclick="toggleMeal('breakfast')">
+      <div class="left">
+        <span class="emoji">🥟</span>
+        <div>
+          <div class="name">早餐 <span class="time">7:00-8:30</span></div>
+        </div>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+    <div class="meal-body" id="body-breakfast">
+      <div class="meal-body-inner">
+        <div class="checklist-item" data-task="egg" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">加一个水煮蛋</span>
+          <span class="tag protein">+7g蛋白</span>
+        </div>
+        <div class="checklist-item" data-task="wonton" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">馄饨正常吃</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-lunch">
+    <div class="meal-header" onclick="toggleMeal('lunch')">
+      <div class="left">
+        <span class="emoji">🍱</span>
+        <div>
+          <div class="name">午餐 <span class="time">11:30-13:00</span></div>
+        </div>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+    <div class="meal-body" id="body-lunch">
+      <div class="meal-body-inner">
+        <div class="checklist-item" data-task="lunch-meat" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">记录午餐肉量</span>
+        </div>
+        <div class="checklist-item" data-task="lunch-rice" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">米饭一碗，不多打</span>
+        </div>
+        <div class="checklist-item" data-task="lunch-nodrink" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">没喝含糖饮料</span>
+          <span class="tag important">关键！</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-dinner">
+    <div class="meal-header" onclick="toggleMeal('dinner')">
+      <div class="left">
+        <span class="emoji">🥗</span>
+        <div>
+          <div class="name">晚餐 <span class="time">17:30-19:00</span></div>
+        </div>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+    <div class="meal-body" id="body-dinner">
+      <div class="meal-body-inner">
+        <div class="checklist-item" data-task="dinner-meat" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">肉菜占一半</span>
+          <span class="tag protein">+40g蛋白</span>
+        </div>
+        <div class="checklist-item" data-task="dinner-good-meat" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">选鸡/牛/鱼/虾，少选炸的</span>
+        </div>
+        <div class="checklist-item" data-task="dinner-half-rice" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">米饭半碗</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="card-exercise">
+    <div class="meal-header" onclick="toggleMeal('exercise')">
+      <div class="left">
+        <span class="emoji">💪</span>
+        <div>
+          <div class="name">运动 <span class="time">20:00-21:00</span></div>
+        </div>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+    <div class="meal-body" id="body-exercise">
+      <div class="meal-body-inner">
+        <div class="checklist-item" data-task="squat" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">深蹲 × 15个</span>
+        </div>
+        <div class="checklist-item" data-task="pushup" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">俯卧撑 × 10个</span>
+        </div>
+        <div class="checklist-item" data-task="plank" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">平板支撑 × 30秒</span>
+        </div>
+        <div class="checklist-item" data-task="walk" onclick="toggleCheck(this)">
+          <div class="checkbox"></div>
+          <span class="text">步行 30 分钟以上</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">💡 今日小贴士</div>
+  <div class="tip-card" id="tipCard">
+    <div class="tip-title" id="tipTitle"></div>
+    <div class="tip-text" id="tipText"></div>
+  </div>
+</div>
+
+<div class="settings-bar">
+  <button class="btn-secondary" onclick="openSettings()">⚙️ 提醒设置</button>
+  <button class="btn-primary" onclick="resetDay()">🔄 明日重置</button>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" onclick="closeSettings(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>⏰ 提醒时间设置</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">
+      开启通知权限后，会在指定时间提醒你
+    </p>
+
+    <div class="toggle-row">
+      <span>🥟 早餐提醒</span>
+      <div class="toggle on" data-notify="breakfast" onclick="toggleNotify(this)"></div>
+    </div>
+    <label>提醒时间</label>
+    <input type="time" id="notify-breakfast" value="07:30">
+
+    <div class="toggle-row">
+      <span>🍱 午餐提醒</span>
+      <div class="toggle on" data-notify="lunch" onclick="toggleNotify(this)"></div>
+    </div>
+    <label>提醒时间</label>
+    <input type="time" id="notify-lunch" value="11:30">
+
+    <div class="toggle-row">
+      <span>🥗 晚餐提醒</span>
+      <div class="toggle on" data-notify="dinner" onclick="toggleNotify(this)"></div>
+    </div>
+    <label>提醒时间</label>
+    <input type="time" id="notify-dinner" value="17:30">
+
+    <div class="toggle-row">
+      <span>💪 运动提醒</span>
+      <div class="toggle on" data-notify="exercise" onclick="toggleNotify(this)"></div>
+    </div>
+    <label>提醒时间</label>
+    <input type="time" id="notify-exercise" value="20:00">
+
+    <br>
+    <button class="btn-primary" style="width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;cursor:pointer;margin-top:8px;" onclick="requestNotifPermission()">
+      🔔 开启通知权限
+    </button>
+    <button class="btn-secondary" style="width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;cursor:pointer;margin-top:8px;" onclick="saveSettings()">
+      💾 保存设置
+    </button>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+const STORAGE_KEY = 'luna-diet-tracker';
+const today = new Date().toISOString().slice(0, 10);
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { date: today, checks: {}, streak: 0, settings: defaultSettings() };
+    const state = JSON.parse(raw);
+    if (state.date !== today) {
+      // new day
+      const prevComplete = isDayComplete(state);
+      state.streak = prevComplete ? (state.streak || 0) + 1 : 0;
+      state.date = today;
+      state.checks = {};
+    }
+    if (!state.settings) state.settings = defaultSettings();
+    return state;
+  } catch(e) {
+    return { date: today, checks: {}, streak: 0, settings: defaultSettings() };
+  }
+}
+
+function defaultSettings() {
+  return {
+    notifBreakfast: true, notifLunch: true, notifDinner: true, notifExercise: true,
+    timeBreakfast: '07:30', timeLunch: '11:30', timeDinner: '17:30', timeExercise: '20:00'
+  };
+}
+
+function saveState(s) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+
+let state = loadState();
+
+// ============ DATE DISPLAY ============
+const days = ['周日','周一','周二','周三','周四','周五','周六'];
+const d = new Date();
+document.getElementById('dateDisplay').textContent =
+  `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${days[d.getDay()]}`;
+
+// ============ CHECKS ============
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  const task = el.dataset.task;
+  if (el.classList.checked) {
+    state.checks[task] = true;
+    showToast('✅ 做得好！');
+  } else {
+    delete state.checks[task];
+  }
+  saveState(state);
+  updateProgress();
+}
+
+function restoreChecks() {
+  document.querySelectorAll('.checklist-item').forEach(el => {
+    if (state.checks[el.dataset.task]) {
+      el.classList.add('checked');
+    }
+  });
+}
+
+function isDayComplete(s) {
+  const tasks = ['egg','wonton','lunch-meat','lunch-rice','lunch-nodrink',
+                 'dinner-meat','dinner-good-meat','dinner-half-rice',
+                 'squat','pushup','plank','walk'];
+  return tasks.filter(t => s.checks[t]).length >= 8;
+}
+
+// ============ PROGRESS ============
+function updateProgress() {
+  const total = document.querySelectorAll('.checklist-item').length;
+  const done = document.querySelectorAll('.checklist-item.checked').length;
+  const pct = Math.round(done / total * 100);
+  
+  document.getElementById('progressPct').textContent = pct + '%';
+  const circumference = 2 * Math.PI * 24;
+  document.getElementById('progressCircle').style.strokeDashoffset = 
+    circumference - (circumference * pct / 100);
+  
+  document.getElementById('streakText').textContent = `🔥 连续打卡: ${state.streak} 天`;
+}
+
+// ============ EXPAND/COLLAPSE ============
+function toggleMeal(meal) {
+  const body = document.getElementById('body-' + meal);
+  const header = body.previousElementSibling;
+  body.classList.toggle('open');
+  header.classList.toggle('open');
+}
+
+// expand current meal section based on time
+function autoExpand() {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 10) toggleMeal('breakfast');
+  else if (h >= 11 && h < 14) toggleMeal('lunch');
+  else if (h >= 17 && h < 20) toggleMeal('dinner');
+  else if (h >= 19 && h < 22) toggleMeal('exercise');
+}
+
+// ============ TIPS ============
+const tips = [
+  { title: '蛋白质小知识', text: '一个鸡蛋约含 7g 蛋白质，你 90kg 体重每天需要约 140-180g。早餐 19g，所以午餐晚餐要多吃肉！' },
+  { title: '含糖饮料陷阱', text: '一杯奶茶 ≈ 400-600 大卡，相当于你少吃一顿饭。换成水或无糖茶，效果立竿见影。' },
+  { title: '减脂不等于挨饿', text: '热量缺口 300-500 大卡就够了。太多反而让身体进入节能模式，更难瘦。' },
+  { title: '肌肉是你的盟友', text: '同样体重，肌肉多的人消耗更多热量。所以别光靠少吃，加点力量训练。' },
+  { title: '体重波动是正常的', text: '一天内体重可以波动 1-2kg，这都是水分。看周均值，别看每日数字。' },
+  { title: '食堂打菜技巧', text: '先打肉，再打菜。肉的面积和菜差不多的时候就对了。炸的少吃，清蒸/卤的优先。' },
+  { title: '喝水也很重要', text: '每天 2000ml+ 的水，饭前喝一杯还能增加饱腹感。' },
+];
+
+function showRandomTip() {
+  const tip = tips[Math.floor(Math.random() * tips.length)];
+  document.getElementById('tipTitle').textContent = tip.title;
+  document.getElementById('tipText').textContent = tip.text;
+}
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+// ============ SETTINGS ============
+function openSettings() {
+  const m = document.getElementById('settingsModal');
+  m.classList.add('open');
+  // load values
+  const s = state.settings;
+  document.getElementById('notify-breakfast').value = s.timeBreakfast;
+  document.getElementById('notify-lunch').value = s.timeLunch;
+  document.getElementById('notify-dinner').value = s.timeDinner;
+  document.getElementById('notify-exercise').value = s.timeExercise;
+  document.querySelectorAll('.toggle').forEach(t => {
+    const key = 'notif' + t.dataset.notify.charAt(0).toUpperCase() + t.dataset.notify.slice(1);
+    t.classList.toggle('on', s[key]);
+  });
+}
+function closeSettings(e) {
+  if (e.target === e.currentTarget) {
+    document.getElementById('settingsModal').classList.remove('open');
+  }
+}
+function toggleNotify(el) {
+  el.classList.toggle('on');
+}
+function saveSettings() {
+  const s = state.settings;
+  s.timeBreakfast = document.getElementById('notify-breakfast').value;
+  s.timeLunch = document.getElementById('notify-lunch').value;
+  s.timeDinner = document.getElementById('notify-dinner').value;
+  s.timeExercise = document.getElementById('notify-exercise').value;
+  document.querySelectorAll('.toggle').forEach(t => {
+    const key = 'notif' + t.dataset.notify.charAt(0).toUpperCase() + t.dataset.notify.slice(1);
+    s[key] = t.classList.contains('on');
+  });
+  saveState(state);
+  scheduleNotifications();
+  document.getElementById('settingsModal').classList.remove('open');
+  showToast('💾 设置已保存');
+}
+
+// ============ NOTIFICATIONS ============
+function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    showToast('❌ 浏览器不支持通知');
+    return;
+  }
+  Notification.requestPermission().then(p => {
+    if (p === 'granted') {
+      showToast('🔔 通知已开启！');
+      scheduleNotifications();
+    } else {
+      showToast('❌ 通知权限被拒绝');
+    }
+  });
+}
+
+const notifMessages = {
+  breakfast: { title: '🥟 早餐提醒', body: '记得加一个水煮蛋！+7g蛋白质' },
+  lunch: { title: '🍱 午餐提醒', body: '食堂有什么吃什么，别喝含糖饮料！' },
+  dinner: { title: '🥗 晚餐提醒', body: '根据中午情况调整——肉菜打一半！选鸡/牛/鱼/虾' },
+  exercise: { title: '💪 运动提醒', body: '深蹲15 + 俯卧撑10 + 平板30秒，15分钟搞定' }
+};
+
+function scheduleNotifications() {
+  // clear old
+  if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
+  window._notifTimers = [];
+  
+  const s = state.settings;
+  const now = new Date();
+  
+  ['breakfast','lunch','dinner','exercise'].forEach(meal => {
+    const key = 'notif' + meal.charAt(0).toUpperCase() + meal.slice(1);
+    if (!s[key]) return;
+    
+    const timeStr = s['time' + meal.charAt(0).toUpperCase() + meal.slice(1)];
+    const [hh, mm] = timeStr.split(':').map(Number);
+    const target = new Date(now);
+    target.setHours(hh, mm, 0, 0);
+    
+    let delay = target.getTime() - now.getTime();
+    if (delay < 0) delay += 86400000; // tomorrow
+    
+    const timer = setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        const msg = notifMessages[meal];
+        new Notification(msg.title, { body: msg.body, icon: '🌙' });
+      }
+      // reschedule for next day
+      scheduleNotifications();
+    }, delay);
+    
+    window._notifTimers.push(timer);
+  });
+}
+
+// ============ RESET ============
+function resetDay() {
+  if (!confirm('确定要重置今日记录吗？')) return;
+  state.checks = {};
+  saveState(state);
+  document.querySelectorAll('.checklist-item').forEach(el => el.classList.remove('checked'));
+  updateProgress();
+  showToast('🔄 已重置');
+}
+
+// ============ PWA INSTALL ============
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installHint').style.display = 'block';
+});
+
+// ============ INIT ============
+restoreChecks();
+updateProgress();
+showRandomTip();
+autoExpand();
+scheduleNotifications();
+
+// service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
